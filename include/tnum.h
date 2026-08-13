@@ -1,6 +1,7 @@
 #ifndef _LINUX_TNUM_H
 #define _LINUX_TNUM_H
 
+#include "kernel.h"
 #include "types.h"
 
 struct tnum {
