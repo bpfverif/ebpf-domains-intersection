@@ -1,1 +1,4 @@
 *.out
+*.gb
+*.clang-format
+*.vscode
