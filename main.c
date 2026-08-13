@@ -79,6 +79,37 @@ int main()
 			   (elapsed_ms * 1000000.0) / ITERATIONS);
 		printf("  allwise intersection: %d\n", res_bool);
 		printf("--------\n");
+
+		// 3. Time Find Witness
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		for (int i = 0; i < ITERATIONS; i++) {
+			u64 temp_witness;
+			res_bool = find_witness(&reg, &temp_witness);
+			witness_val = temp_witness;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		elapsed_ms = get_time_diff_ms(start, end);
+		printf("  witness:  %.2f ms total (%.2f ns/call)\n", elapsed_ms,
+			   (elapsed_ms * 1000000.0) / ITERATIONS);
+		printf("  find witness intersection: %d, %ld (0x%lx)\n", res_bool,
+			   (s64) witness_val, witness_val);
+		printf("--------\n");
+
+		// 4. Time Find Witness Combined
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		for (int i = 0; i < ITERATIONS; i++) {
+			u64 temp_witness;
+			res_bool = find_witness_combined(&reg, &temp_witness);
+			witness_val = temp_witness;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		elapsed_ms = get_time_diff_ms(start, end);
+		printf("  witness combined:  %.2f ms total (%.2f ns/call)\n",
+			   elapsed_ms, (elapsed_ms * 1000000.0) / ITERATIONS);
+		printf("  find witness combined intersection: %d, %ld (0x%lx)\n\n",
+			   res_bool, (s64) witness_val, witness_val);
+		printf("--------\n");
+
 	}
 
 	return 0;
