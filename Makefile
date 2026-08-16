@@ -7,7 +7,8 @@ SRCS = main.c \
        intersection_allwise.c \
        intersection_pairwise.c \
        find_witness.c \
-       find_witness_combined.c
+       find_witness_combined.c \
+	   intersection_allwise_inline.c
 
 OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.c=.o))
 DEPS = $(OBJS:.o=.d)

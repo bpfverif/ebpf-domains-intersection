@@ -35,6 +35,14 @@ static double get_time_diff_ms(struct timespec start, struct timespec end)
 		   (end.tv_nsec - start.tv_nsec) / 1000000.0;
 }
 
+struct result {
+	const char *name;
+	bool intersect;
+	double ns_call;
+	bool has_witness;
+	u64 witness;
+};
+
 int main()
 {
 	struct timespec start, end;
@@ -46,7 +54,7 @@ int main()
 
 	for (int t_idx = 0; t_idx < NUM_TESTS; t_idx++) {
 		struct bpf_reg_state reg = tests[t_idx];
-		printf("============== Test Case %d ==============\n", t_idx);
+		struct result results[5];
 
 		// 1. Time Pairwise
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -58,11 +66,12 @@ int main()
 		}
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		elapsed_ms = get_time_diff_ms(start, end);
-
-		printf("  pairwise: %.2f ms total (%.2f ns/call)\n", elapsed_ms,
-			   (elapsed_ms * 1000000.0) / ITERATIONS);
-		printf("  pairwise intersection: %d\n", res_bool);
-		printf("--------\n");
+		results[0] = (struct result){
+			.name = "Pairwise (Baseline)",
+			.intersect = res_bool,
+			.ns_call = (elapsed_ms * 1000000.0) / ITERATIONS,
+			.has_witness = false
+		};
 
 		// 2. Time Allwise
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -74,12 +83,28 @@ int main()
 		}
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		elapsed_ms = get_time_diff_ms(start, end);
-		printf("  allwise:  %.2f ms total (%.2f ns/call)\n", elapsed_ms,
-			   (elapsed_ms * 1000000.0) / ITERATIONS);
-		printf("  allwise intersection: %d\n", res_bool);
-		printf("--------\n");
+		results[1] = (struct result){
+			.name = "Allwise",
+			.intersect = res_bool,
+			.ns_call = (elapsed_ms * 1000000.0) / ITERATIONS,
+			.has_witness = false
+		};
 
-		// 3. Time Find Witness
+		// 3. Time Allwise Inline
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		for (int i = 0; i < ITERATIONS; i++) {
+			res_bool = reg_bounds_intersect_allwise_inline(&reg);
+		}
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		elapsed_ms = get_time_diff_ms(start, end);
+		results[2] = (struct result){
+			.name = "Allwise Inline",
+			.intersect = res_bool,
+			.ns_call = (elapsed_ms * 1000000.0) / ITERATIONS,
+			.has_witness = false
+		};
+
+		// 4. Time Find Witness
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		for (int i = 0; i < ITERATIONS; i++) {
 			u64 temp_witness;
@@ -88,13 +113,15 @@ int main()
 		}
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		elapsed_ms = get_time_diff_ms(start, end);
-		printf("  witness:  %.2f ms total (%.2f ns/call)\n", elapsed_ms,
-			   (elapsed_ms * 1000000.0) / ITERATIONS);
-		printf("  find witness intersection: %d, %ld (0x%lx)\n", res_bool,
-			   (s64) witness_val, witness_val);
-		printf("--------\n");
+		results[3] = (struct result){
+			.name = "Witness (original)",
+			.intersect = res_bool,
+			.ns_call = (elapsed_ms * 1000000.0) / ITERATIONS,
+			.has_witness = res_bool,
+			.witness = witness_val
+		};
 
-		// 4. Time Find Witness Combined
+		// 5. Time Find Witness Combined
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		for (int i = 0; i < ITERATIONS; i++) {
 			u64 temp_witness;
@@ -103,12 +130,33 @@ int main()
 		}
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		elapsed_ms = get_time_diff_ms(start, end);
-		printf("  witness combined:  %.2f ms total (%.2f ns/call)\n",
-			   elapsed_ms, (elapsed_ms * 1000000.0) / ITERATIONS);
-		printf("  find witness combined intersection: %d, %ld (0x%lx)\n\n",
-			   res_bool, (s64) witness_val, witness_val);
-		printf("--------\n");
+		results[4] = (struct result){
+			.name = "Witness Combined",
+			.intersect = res_bool,
+			.ns_call = (elapsed_ms * 1000000.0) / ITERATIONS,
+			.has_witness = res_bool,
+			.witness = witness_val
+		};
 
+		printf("\n============== Test Case %d ==============\n", t_idx);
+		printf("%-20s | %-10s | %-18s | %-12s | %-12s\n", "Algorithm", "Intersect?", "Latency (ns/call)", "Speedup", "Witness");
+		printf("------------------------------------------------------------------------------------\n");
+		
+		double baseline = results[0].ns_call;
+		for (int j = 0; j < 5; j++) {
+			char wit_str[32] = "-";
+			if (results[j].has_witness) {
+				snprintf(wit_str, sizeof(wit_str), "0x%llx", (unsigned long long)results[j].witness);
+			}
+			double speedup = baseline / results[j].ns_call;
+			printf("%-20s | %-10s | %14.2f ns     | %10.2fx    | %-12s\n",
+				   results[j].name,
+				   results[j].intersect ? "Yes" : "No",
+				   results[j].ns_call,
+				   speedup,
+				   wit_str);
+		}
+		printf("====================================================================================\n");
 	}
 
 	return 0;
