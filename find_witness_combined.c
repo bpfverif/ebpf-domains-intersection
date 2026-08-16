@@ -1,13 +1,4 @@
-#include "intersection.h"
-#include <stdint.h>
-#include <stdbool.h>
-
-static bool tnum_contains(struct tnum t, u64 v)
-{
-	return (v & ~t.mask) == t.value;
-}
-
-#define UPPER_HALF 0xffffFFFF00000000ull
+#include "bpf_common.h"
 
 /*
  * find_witness_aux() - Core engine for witness construction within flattened bounds.

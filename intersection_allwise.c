@@ -1,7 +1,4 @@
-#include "kernel.h"
-#include "limits.h"
-#include "tnum.h"
-#include "types.h"
+#include "bpf_common.h"
 
 struct u64_interval {
 	u64 min;

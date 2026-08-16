@@ -1,6 +1,4 @@
-#include "limits.h"
-#include "tnum.h"
-#include "types.h"
+#include "bpf_common.h"
 
 static bool range_bounds_violation(s64 smin, s64 smax, u64 umin, u64 umax,
 								   s32 s32_min, s32 s32_max, u32 u32_min,

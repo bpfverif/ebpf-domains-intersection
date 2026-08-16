@@ -4,7 +4,6 @@ BUILD_DIR = build
 TARGET = $(BUILD_DIR)/intersection.out
 
 SRCS = main.c \
-       tnum.c \
        intersection_allwise.c \
        intersection_pairwise.c \
        find_witness.c \

@@ -1,4 +1,3 @@
-#include "bpf_verifier.h"
 #include "intersection.h"
 #include <stdio.h>
 #include <time.h>
