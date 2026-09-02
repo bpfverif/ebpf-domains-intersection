@@ -1,6 +1,18 @@
 #include "bpf_common.h"
 
-bool u64_intersects_tnum(u64 umin, u64 umax, struct tnum t)
+/* Returns true if @a is a known constant */
+static inline bool tnum_is_const(struct tnum a)
+{
+	return !a.mask;
+}
+
+/* Returns true if 32-bit subreg @a is a known constant*/
+static inline bool tnum_subreg_is_const(struct tnum a)
+{
+	return !(tnum_subreg(a)).mask;
+}
+
+static bool u64_intersects_tnum(u64 umin, u64 umax, struct tnum t)
 {
 	u64 tmin = t.value;
 	u64 tmax = t.value | t.mask;
@@ -9,7 +21,7 @@ bool u64_intersects_tnum(u64 umin, u64 umax, struct tnum t)
 			 ((t.value != (umin & ~t.mask)) && (tnum_step(t, umin) > umax)));
 }
 
-bool u32_intersects_tnum(u32 u32_min, u32 u32_max, struct tnum t)
+static bool u32_intersects_tnum(u32 u32_min, u32 u32_max, struct tnum t)
 {
 	struct tnum t32 = tnum_subreg(t);
 	u32 t32_min = t32.value;
@@ -98,6 +110,13 @@ static bool process_u64_interval(u64 x, u64 y, u32 u32_min, u32 u32_max,
 	return false;
 }
 
+static bool range_bounds_violation(struct bpf_reg_state *reg)
+{
+	return (reg->umin_value > reg->umax_value || reg->smin_value > reg->smax_value ||
+		reg->u32_min_value > reg->u32_max_value ||
+		reg->s32_min_value > reg->s32_max_value);
+}
+
 bool reg_bounds_intersect_allwise_inline(struct bpf_reg_state *reg)
 {
 	u64 umin = reg->umin_value, umax = reg->umax_value;
@@ -105,6 +124,9 @@ bool reg_bounds_intersect_allwise_inline(struct bpf_reg_state *reg)
 	u32 u32_min = reg->u32_min_value, u32_max = reg->u32_max_value;
 	s32 s32_min = reg->s32_min_value, s32_max = reg->s32_max_value;
 	struct tnum t = reg->var_off;
+
+	if (range_bounds_violation(reg))
+		return false;
 
 	if ((u64) smin <= (u64) smax) {
 		u64 l = max_t(u64, umin, (u64) smin);

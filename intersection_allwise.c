@@ -195,10 +195,24 @@ static bool check_allwise_32(const struct u32_interval *u32_intervals,
 	return false;
 }
 
+static bool range_bounds_violation(s64 smin, s64 smax, u64 umin, u64 umax,
+								   s32 s32_min, s32 s32_max, u32 u32_min,
+								   u32 u32_max)
+{
+	return (umin > umax || smin > smax || u32_min > u32_max ||
+			s32_min > s32_max);
+}
+
+
 bool reg_bounds_intersect_allwise(struct tnum t, s64 smin, s64 smax, u64 umin,
 								  u64 umax, s32 s32_min, s32 s32_max,
 								  u32 u32_min, u32 u32_max)
 {
+
+	if (range_bounds_violation(smin, smax, umin, umax, s32_min, s32_max,
+							   u32_min, u32_max))
+		return false;
+
 	/* 1: Compute u64 s64 intersection. Yields at most 2 u64 intervals
 	 * representing the intersection*/
 	struct u64_interval u64_intervals[2];
