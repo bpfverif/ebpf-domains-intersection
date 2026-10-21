@@ -1,0 +1,5 @@
+name = "tnum-step"
+defaultTargets = ["TnumStep"]
+
+[[lean_lib]]
+name = "TnumStep"
