@@ -1,0 +1,5 @@
+name = "parametric"
+defaultTargets = ["PLDIProofs"]
+
+[[lean_lib]]
+name = "PLDIProofs"
